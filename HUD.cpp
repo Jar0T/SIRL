@@ -33,6 +33,11 @@ HUD::HUD(SDL_Renderer* rend, int width, int height) {
 	w = width;
 	h = height;
 
+	std::cout << "HUD initialized\n";
+}
+
+HUD::~HUD() {
+	std::cout << "HUD cleaned\n";
 }
 
 void HUD::renderLives(int lives) {
@@ -57,6 +62,9 @@ void HUD::renderScore() {
 	scoreSurface = TTF_RenderText_Solid(font, std::to_string(DataManager::score).c_str(), color);
 	texture = SDL_CreateTextureFromSurface(renderer, scoreSurface);
 	SDL_RenderCopy(renderer, texture, NULL, &scoreRect);
+
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(scoreSurface);
 }
 
 void HUD::renderWave() {
@@ -72,6 +80,9 @@ void HUD::renderWave() {
 	waveSurface = TTF_RenderText_Solid(font, s.c_str(), color);
 	texture = SDL_CreateTextureFromSurface(renderer, waveSurface);
 	SDL_RenderCopy(renderer, texture, NULL, &waveRect);
+
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(waveSurface);
 }
 
 void HUD::renderMultiplier() {
@@ -87,6 +98,9 @@ void HUD::renderMultiplier() {
 	multSurface = TTF_RenderText_Solid(font, s.c_str(), color);
 	texture = SDL_CreateTextureFromSurface(renderer, multSurface);
 	SDL_RenderCopy(renderer, texture, NULL, &multRect);
+
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(multSurface);
 }
 
 void HUD::renderPresence() {
@@ -142,6 +156,9 @@ void HUD::renderPresence() {
 		texture = SDL_CreateTextureFromSurface(renderer, prSurface);
 		SDL_RenderCopy(renderer, texture, NULL, &prRect);
 	}
+
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(prSurface);
 }
 
 void HUD::render(int lives) {

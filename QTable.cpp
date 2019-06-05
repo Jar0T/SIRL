@@ -5,13 +5,14 @@
 #include <fstream>
 #include <iomanip>
 #include <string>
+#include <iostream>
 
 QTable::QTable(){}
 
 QTable::~QTable(){}
 
 void QTable::movQueue(int a, int b) {
-	if (queuei.size() >= 100) {
+	if (queuei.size() >= 50) {
 		queuei.pop_back();
 		queuej.pop_back();
 
@@ -24,10 +25,21 @@ void QTable::movQueue(int a, int b) {
 	}
 }
 
-void QTable::init(double q, double p, int x) {
+void QTable::init(double q, double p, int x, int range, int max, bool rising, double s, double m, int sp) {
 	srand(time(NULL));
 
+	maxRand = max;
+	randRange = range;
+
+	isRising = rising;
+	step = s;
+	maxVal = m;
+	licznik = 0;
+	speed = sp;
+
 	n = x;
+
+	log_number = 0;
 
 	std::ifstream file("QTable.txt");
 
@@ -41,7 +53,8 @@ void QTable::init(double q, double p, int x) {
 	else {
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < 6; j++) {
-				qtable[i][j] = rand() % 100;
+				qtable[i][j] = ((double)(rand() % 2000 - 1000)) / 1000;
+				//qtable[i][j] = 0.0;
 			}
 		}
 	}
@@ -63,18 +76,11 @@ int QTable::getAction(int i) {
 		}
 	}
 
-	switch (rand() % 3) {
-	case 1:
-		break;
-	case 2:
+	int random = rand() % maxRand;
+	if (random < randRange)
 		index++;
-		break;
-	case 3:
+	if (random > maxRand - randRange)
 		index--;
-		break;
-	default:
-		break;
-	}
 
 	if (index > 5)
 		index = 0;
@@ -83,10 +89,21 @@ int QTable::getAction(int i) {
 
 	movQueue(i, index);
 
+	if (isRising)
+		if (a < maxVal)
+			if (licznik < speed)
+				licznik++;
+			else {
+				a += step;
+				licznik = 0;
+			}
+
+	std::cout << a << "\n";
+
 	return index;
 }
 
-void QTable::reward(int r) {
+void QTable::reward(double r) {
 	std::vector<int>::iterator iti;
 	std::vector<int>::iterator itj;
 
@@ -95,9 +112,9 @@ void QTable::reward(int r) {
 
 	for (iti; iti != queuei.end();) {
 		if (iti == queuei.begin())
-			qtable[*iti][*itj] = qtable[*iti][*itj] * (a - 1) + a * r;
+			qtable[*iti][*itj] = qtable[*iti][*itj] * (1 - a) + a * r;
 		else
-			qtable[*iti][*itj] = qtable[*iti][*itj] * (a - 1) + a * (r + y * qtable[*(iti - 1)][*(itj - 1)]);
+			qtable[*iti][*itj] = qtable[*iti][*itj] * (1 - a) + a * (r + y * qtable[*(iti - 1)][*(itj - 1)]);
 
 		iti++;
 		itj++;
@@ -114,6 +131,23 @@ void QTable::saveTab() {
 			}
 		}
 	}
+
+	file.close();
+}
+
+void QTable::saveLog() {
+	std::ofstream file("Logs/log" + std::to_string(log_number) + ".txt");
+
+	if (file.is_open()) {
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < 6; j++) {
+				file << std::to_string(qtable[i][j]) << "\t";
+			}
+			file << "\n";
+		}
+	}
+
+	log_number++;
 
 	file.close();
 }

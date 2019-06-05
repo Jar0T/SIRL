@@ -2,6 +2,8 @@
 #include <vector>
 #include <stdlib.h>
 #include <time.h>
+#include <thread>
+#include <mutex>
 
 #include "Game.h"
 #include "TextureManager.h"
@@ -45,6 +47,8 @@ int DataManager::nextLive = 50000;
 int DataManager::multThr = 10;
 int DataManager::maxMult = 5;
 
+std::mutex mu;
+
 clock_t start;
 
 Counter c1(60); //Counter to determine if aliens can already move
@@ -71,94 +75,62 @@ int scale = 2;
 
 bool moveDown = false, LRMovement = true; //Can aliens move down and are they moving left or right?
 
-//Are Aliens/Bullets present on right, left or in the middle
-int presence() {
-	int a = 0;
-
-	middleAlien = false;
+#pragma region Aliens/Bullets presence check
+void presenceA() {
 	leftAlien = false;
+	middleAlien = false;
 	rightAlien = false;
-	middleBullet = false;
-	leftBullet = false;
-	rightBullet = false;
-	RFBullet = false;
-	MFBullet = false;
-	LFBullet = false;
 
 	for (int i = 0; i < alien.size(); i++) {
-		if (alien[i]->getPos().x <= player->getPos().x) {
+		if (alien[i]->getPos().x <= player->getPos().x)
 			leftAlien = true;
-		}
-		if (alien[i]->getPos().x >= player->getPos().x && alien[i]->getPos().x <= player->getPos().x + player->getDimensions().x) {
+		if (alien[i]->getPos().x >= player->getPos().x && alien[i]->getPos().x <= player->getPos().x + player->getDimensions().x)
 			middleAlien = true;
-		}
-		if (alien[i]->getPos().x >= player->getPos().x + player->getDimensions().x) {
+		if (alien[i]->getPos().x >= player->getPos().x + player->getDimensions().x)
 			rightAlien = true;
-		}
 	}
+}
+
+void presenceB() {
+	leftBullet = false;
+	middleBullet = false;
+	rightBullet = false;
 
 	for (int i = 0; i < aBullet.size(); i++) {
-		if (aBullet[i]->getPos().x >= player->getPos().x - player->getDimensions().x && aBullet[i]->getPos().x < player->getPos().x) {
+		if (aBullet[i]->getPos().x >= player->getPos().x - player->getDimensions().x && aBullet[i]->getPos().x < player->getPos().x)
 			leftBullet = true;
-		}
-		if (aBullet[i]->getPos().x >= player->getPos().x && aBullet[i]->getPos().x <= player->getPos().x + player->getDimensions().x) {
+		if (aBullet[i]->getPos().x >= player->getPos().x && aBullet[i]->getPos().x <= player->getPos().x + player->getDimensions().x)
 			middleBullet = true;
-		}
-		if (aBullet[i]->getPos().x >= player->getPos().x + player->getDimensions().x && aBullet[i]->getPos().x <= player->getPos().x + 2 * player->getDimensions().x) {
+		if (aBullet[i]->getPos().x >= player->getPos().x + player->getDimensions().x && aBullet[i]->getPos().x <= player->getPos().x + 2 * player->getDimensions().x)
 			rightBullet = true;
-		}
 	}
+}
+
+void presenceFB() {
+	LFBullet = false;
+	MFBullet = false;
+	RFBullet = false;
 
 	for (int i = 0; i < aBullet.size(); i++) {
-		if (aBullet[i]->getPos().x >= player->getPos().x - player->getDimensions().x && 
-			aBullet[i]->getPos().x < player->getPos().x && 
+		if (aBullet[i]->getPos().x >= player->getPos().x - player->getDimensions().x &&
+			aBullet[i]->getPos().x < player->getPos().x &&
 			aBullet[i]->getPos().y >= player->getPos().y - 64 &&
-			aBullet[i]->getPos().y + aBullet[i]->getDimensions().y <player->getPos().y) {
+			aBullet[i]->getPos().y + aBullet[i]->getDimensions().y < player->getPos().y)
 			LFBullet = true;
-		}
-		if (aBullet[i]->getPos().x >= player->getPos().x && 
-			aBullet[i]->getPos().x <= player->getPos().x + player->getDimensions().x &&
-			aBullet[i]->getPos().y >= player->getPos().y - 64 &&
-			aBullet[i]->getPos().y + aBullet[i]->getDimensions().y < player->getPos().y + player->getDimensions().y) {
-			MFBullet = true;
-		}
-		if (aBullet[i]->getPos().x >= player->getPos().x + player->getDimensions().x && 
+		for (int i = 0; i < aBullet.size(); i++)
+			if (aBullet[i]->getPos().x >= player->getPos().x &&
+				aBullet[i]->getPos().x <= player->getPos().x + player->getDimensions().x &&
+				aBullet[i]->getPos().y >= player->getPos().y - 64 &&
+				aBullet[i]->getPos().y + aBullet[i]->getDimensions().y < player->getPos().y + player->getDimensions().y)
+				MFBullet = true;
+		if (aBullet[i]->getPos().x >= player->getPos().x + player->getDimensions().x &&
 			aBullet[i]->getPos().x <= player->getPos().x + 2 * player->getDimensions().x &&
 			aBullet[i]->getPos().y >= player->getPos().y - 64 &&
-			aBullet[i]->getPos().y + aBullet[i]->getDimensions().y < player->getPos().y) {
+			aBullet[i]->getPos().y + aBullet[i]->getDimensions().y < player->getPos().y)
 			RFBullet = true;
-		}
 	}
-
-	if (leftAlien)
-		a = a | 1;
-	a = a << 1;
-	if (middleAlien)
-		a = a | 1;
-	a = a << 1;
-	if (rightAlien)
-		a = a | 1;
-	a = a << 1;
-	if (leftBullet)
-		a = a | 1;
-	a = a << 1;
-	if (middleBullet)
-		a = a | 1;
-	a = a << 1;
-	if (rightBullet)
-		a = a | 1;
-	a = a << 1;
-	if (LFBullet)
-		a = a | 1;
-	a = a << 1;
-	if (MFBullet)
-		a = a | 1;
-	a = a << 1;
-	if (RFBullet)
-		a = a | 1;
-
-	return a;
 }
+#pragma endregion
 
 //Spawns 55 aliens in 5x11 grid
 void spawnAliens(SDL_Renderer *rend) {
@@ -188,6 +160,7 @@ void spawnAliens(SDL_Renderer *rend) {
 //Checks if alien collides with bullet
 void collisionAB() {
 	for (int i = 0; i < pBullet.size(); i++) {
+		mu.lock();
 		for (int j = 0; j < alien.size(); j++) {
 			if (pBullet[i]->getPos().x + pBullet[i]->getDimensions().x >= alien[j]->getPos().x &&
 				alien[j]->getPos().x + alien[j]->getDimensions().x >= pBullet[i]->getPos().x &&
@@ -217,6 +190,7 @@ void collisionAB() {
 				break;
 			}
 		}
+		mu.unlock();
 	}
 }
 
@@ -240,31 +214,24 @@ bool collisionPB() {
 	return false;
 }
 
-//Checks if UFO collides with bullet
-//void collisionUB() {
-//	for (int i = 0; i < pBullet.size(); i++) {
-//		if (pBullet[i]->getPos().x + pBullet[i]->getDimensions().x >= ufo->getPos().x &&
-//			ufo->getPos().x + ufo->getDimensions().x >= pBullet[i]->getPos().x &&
-//			pBullet[i]->getPos().y + pBullet[i]->getDimensions().y >= ufo->getPos().y &&
-//			ufo->getPos().y + ufo->getDimensions().y >= pBullet[i]->getPos().y) {
-//
-//			ufo->onCollision();
-//			delete(pBullet[i]);
-//			pBullet.erase(pBullet.begin() + i);
-//			delete(ufo);
-//			ufo = nullptr;
-//
-//			break;
-//		}
-//	}
-//}
-
 Game::Game() {
 
 }
 
 Game::~Game() {
 
+}
+
+void function() {
+	while (1) {
+		std::thread w1(presenceA);
+		std::thread w2(presenceB);
+		std::thread w3(presenceFB);
+
+		if (w1.joinable()) w1.join();
+		if (w2.joinable()) w2.join();
+		if (w3.joinable()) w3.join();
+	}
 }
 
 #pragma region initialization
@@ -299,14 +266,13 @@ void Game::init(const char *title, int xpos, int ypos, int width, int height, bo
 	windowWidth = width;
 	windowHeight = height;
 
-	tab.init(0.01, 0.8, 512);
+	tab.init(0.0, 0.6, 512, 50, 1000, true, 0.01, 0.1, 300);
 
 	hud = new HUD(renderer, width, height);
 
 	spawnAliens(renderer);
 
 	player = new Player("Assets/Player.png", renderer, width / 2 - 32, height - 80, "Player", 32, 32, scale);
-
 }
 #pragma endregion
 
@@ -323,35 +289,10 @@ void Game::handleEvents() {
 		switch (event.key.keysym.sym) {
 		case SDLK_ESCAPE:
 			isRunning = false;
-		/*case SDLK_LEFT:
-			playerSpeed = -10;
-			break;
-		case SDLK_RIGHT:
-			playerSpeed = 10;
-			break;
-		case SDLK_SPACE:
-			if (pBullet.size() < playerMaxB) {
-				pBullet.push_back(new PlayerBullet("Assets/Player_Bullet.png", renderer, player->getPos().x + 32, player->getPos().y, "pBullet", 2, 6, scale));
-			}
-			break;*/
 		default:
 			break;
 		}
 	}
-
-	/*if (event.type == SDL_KEYUP) {
-		switch (event.key.keysym.sym) {
-		case SDLK_LEFT:
-			playerSpeed = 0;
-			break;
-		case SDLK_RIGHT:
-			playerSpeed = 0;
-			break;
-		default:
-			break;
-		}
-	}*/
-
 }
 #pragma endregion
 
@@ -382,36 +323,54 @@ void Game::update() {
 			}
 		}
 		moveDown = true;
+
+		tab.saveLog();
 	}
 
 	for (auto &v : alien) {
 		v->update();
 	}
 
-	/*if (c2.getValue() == 0) {
-		if (rand() % 2 > 1) {
-			ufo = new UFO("Assets/UFO.png", renderer, windowWidth + 10, 90, "UFO", 64, 32, scale);
-			ufoSpeed = -15;
-		}
-		else {
-			ufo = new UFO("Assets/UFO.png", renderer, -138, 90, "UFO", 64, 32, scale);
-			ufoSpeed = 15;
-		}
-	}*/
+	int a = 0;
 
-	/*if (ufo != nullptr) {
-		ufo->move(right * ufoSpeed);
-		ufo->update();
-		if (ufo->getPos().x < -(ufo->getDimensions().x + 10)) {
-			delete(ufo);
-			ufo = nullptr;
-		}
-		collisionUB();
-	}*/
+	std::thread w1(presenceA);
+	std::thread w2(presenceB);
+	std::thread w3(presenceFB);
 
-	//presence();
+	if (w1.joinable()) w1.join();
+	if (w2.joinable()) w2.join();
+	if (w3.joinable()) w3.join();
 
-	int a = presence();
+	/*presenceA();
+	presenceB();
+	presenceFB();*/
+
+	if (leftAlien)
+		a = a | 1;
+	a = a << 1;
+	if (middleAlien)
+		a = a | 1;
+	a = a << 1;
+	if (rightAlien)
+		a = a | 1;
+	a = a << 1;
+	if (leftBullet)
+		a = a | 1;
+	a = a << 1;
+	if (middleBullet)
+		a = a | 1;
+	a = a << 1;
+	if (rightBullet)
+		a = a | 1;
+	a = a << 1;
+	if (LFBullet)
+		a = a | 1;
+	a = a << 1;
+	if (MFBullet)
+		a = a | 1;
+	a = a << 1;
+	if (RFBullet)
+		a = a | 1;
 
 	a = tab.getAction(a);
 
@@ -489,23 +448,35 @@ void Game::update() {
 
 	LRMovement = true;
 
-	if (DataManager::score - lastScore != 0) {
-		tab.reward((DataManager::score - lastScore) / 100.0);
-		start = clock();
+#pragma region rewards
+	if (middleBullet) {
+		if (MFBullet) {
+			tab.reward(-10.0);
+		}
+		else {
+			tab.reward(-5.0);
+		}
 	}
 	else {
-		if (!((leftAlien && playerSpeed == -10) || (rightAlien && playerSpeed == 10)))
-			tab.reward((clock() - start) / CLOCKS_PER_SEC);
+		if (!gotHit) {
+			if (DataManager::score - lastScore != 0) {
+				tab.reward(20.0);
+			}
+
+			if (!middleAlien) {
+				if ((leftAlien && playerSpeed > 0) || (rightAlien && playerSpeed < 0)) {
+					tab.reward(5.0);
+				}
+				else {
+					tab.reward(-5.0);
+				}
+			}
+		}
+		else {
+			tab.reward(-30.0);
+		}
 	}
-
-	if (middleBullet == true)
-		tab.reward(-5.0);
-
-	if (MFBullet == true)
-		tab.reward(-10.0);
-
-	if (gotHit == true)
-		tab.reward(-100.0);
+#pragma endregion
 
 	if (tooLow == true)
 		alien.clear();
@@ -534,10 +505,6 @@ void Game::render() {
 		v->render();
 	}
 
-	/*if (ufo != nullptr) {
-		ufo->render();
-	}*/
-
 	player->render();
 
 	hud->render(player->getLives());
@@ -560,7 +527,6 @@ void Game::clean() {
 		pBullet.erase(pBullet.begin());
 	}
 
-	//delete(ufo);
 	delete(player);
 	delete(hud);
 	

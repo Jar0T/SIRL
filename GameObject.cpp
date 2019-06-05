@@ -45,10 +45,8 @@ GameObject::GameObject(const char* textureSheet, SDL_Renderer* rend, int xpos, i
 }
 
 GameObject::~GameObject() {
-	//std::cout << "GameObject destroyed" << std::endl;
+	SDL_DestroyTexture(objTexture);
 }
-
-
 
 void GameObject::setPos(Vector2D newPos) {
 	pos = newPos;

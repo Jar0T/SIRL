@@ -6,6 +6,15 @@ private:
 	double qtable[512][6];
 	double a, y;
 
+	int maxRand;
+	int randRange;
+
+	bool isRising;
+	double step;
+	double maxVal;
+	int licznik;
+	int speed;
+
 	std::vector<int> queuei;
 	std::vector<int> queuej;
 
@@ -13,11 +22,14 @@ private:
 
 	int n;
 
+	int log_number;
+
 public:
-	void init(double, double, int);
+	void init(double, double, int, int, int, bool, double s = 0, double m = 0, int sp = 0);
 	int getAction(int);
-	void reward(int);
+	void reward(double);
 	void saveTab();
+	void saveLog();
 	QTable();
 	~QTable();
 };

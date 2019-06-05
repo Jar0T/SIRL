@@ -27,6 +27,7 @@ private:
 
 public:
 	HUD(SDL_Renderer*, int, int);
+	~HUD();
 
 	void render(int);
 };
