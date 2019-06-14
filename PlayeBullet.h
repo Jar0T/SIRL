@@ -6,7 +6,6 @@
 class PlayerBullet : public GameObject {
 private:
 	int speed = 10;
-	int lives = 3;
 
 public:
 	PlayerBullet(const char*, SDL_Renderer*, Vector2D, std::string, int, int, int);

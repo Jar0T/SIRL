@@ -25,7 +25,7 @@ private:
 	int log_number;
 
 public:
-	void init(double, double, int, int, int, bool, double s = 0, double m = 0, int sp = 0);
+	void init(double, double, int, int, int, bool rising = false, double s = 0, double m = 0, int sp = 0);
 	int getAction(int);
 	void reward(double);
 	void saveTab();

@@ -443,8 +443,12 @@ void Game::update() {
 		DataManager::nextLive += 50000;
 	}
 
-	if (player->getLives() <= 0)
+	if (player->getLives() <= 0) {
+		isRunning = false;
 		player->addLives();
+		player->addLives();
+		player->addLives();
+	}
 
 	LRMovement = true;
 
@@ -478,8 +482,11 @@ void Game::update() {
 	}
 #pragma endregion
 
-	if (tooLow == true)
-		alien.clear();
+	if (tooLow == true) {
+		isRunning = false;
+		while (player->getLives() < 3)
+			player->addLives();
+	}
 
 	if (alien.size() == 0) {
 		spawnAliens(renderer);
@@ -516,6 +523,17 @@ void Game::render() {
 #pragma region clean_after_game
 void Game::clean() {
 	tab.saveTab();
+
+	DataManager::score = 0;
+	DataManager::level = 0;
+	DataManager::nextLevel = 2;
+	DataManager::waves = 0;
+	DataManager::maxLevel = 5;
+	DataManager::multiplier = 1;
+	DataManager::aliensKilled = 0;
+	DataManager::nextLive = 50000;
+	DataManager::multThr = 10;
+	DataManager::maxMult = 5;
 
 	while (alien.size() > 0) {
 		delete(alien[0]);
